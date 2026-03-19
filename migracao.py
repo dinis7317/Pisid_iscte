@@ -32,14 +32,14 @@ def iniciar_migracao():
     mysql_conn = ligar_mysql()
     cursor_mysql = mysql_conn.cursor()
     
-    print("🚀 Migração iniciada (Modo VARCHAR 50)...")
+    print("Migração em curso")
     
     while True:
         try:
             ultimo_id = obter_ultimo_id_migrado(cursor_mysql)
             query = {'_id': {'$gt': ultimo_id}} if ultimo_id else {}
             
-            # Lê documentos novos do Mongo
+            #Lê documentos novos do mongo
             novos_documentos = colecao_sensores.find(query).sort('_id', 1)
             
             for doc in novos_documentos:
@@ -49,7 +49,7 @@ def iniciar_migracao():
                 if tipo == 'Temperature':
                     valor_num = float(doc.get('Temperature', 0))
                     if valor_num < -50.0 or valor_num > 100.0:
-                        print(f"⚠️ Outlier ignorado: {valor_num}")
+                        print(f"valor fora dos limites: {valor_num} ignorado")
                     else:
                         sql = "INSERT INTO Temperatura (Hora, Temperatura) VALUES (%s, %s)"
                         cursor_mysql.execute(sql, (doc.get('Hour'), str(valor_num)))
@@ -67,16 +67,15 @@ def iniciar_migracao():
                     cursor_mysql.execute(sql, val)
                     inserido = True
 
-                # Só commitamos e atualizamos o ID se houve inserção ou se foi outlier ignorado
                 mysql_conn.commit()
                 atualizar_ultimo_id_migrado(cursor_mysql, mysql_conn, doc['_id'])
                 if inserido:
-                    print(f"✨ Migrado: {tipo} | ID: {doc['_id']}")
+                    print(f"Migrado: {tipo} | ID: {doc['_id']}")
             
             time.sleep(1)
             
         except Exception as e:
-            print(f"❌ Erro: {e}")
+            print(f"Erro: {e}")
             time.sleep(5)
 
 if __name__ == "__main__":

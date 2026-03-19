@@ -9,12 +9,10 @@ db = mongo["pisid"]
 BROKER = "broker.emqx.io"
 GRUPO  = 21
 
-# Limites de outlier — ajusta conforme o teu grupo
 TEMP_MIN, TEMP_MAX = 0, 50
 SOM_MIN,  SOM_MAX  = 0, 50
 
 def validar_hora(hora_str):
-    """Retorna True se a hora for válida, False se for lixo como '2025-05-32'."""
     try:
         datetime.strptime(hora_str, "%Y-%m-%d %H:%M:%S.%f")
         return True
@@ -28,12 +26,12 @@ def on_message(client, userdata, msg):
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        print(f"  [AVISO] JSON inválido: {raw}")
+        print(f"JSON inválido: {raw}")
         return
 
     data["_recebido_em"] = datetime.now()
 
-    # ── Temperatura ───────────────────────────────────────────────
+    #Temperatura
     if msg.topic == f"pisid_mazetemp_{GRUPO}":
         valor = data.get("Temperature")
         hora  = data.get("Hour", "")
@@ -41,22 +39,22 @@ def on_message(client, userdata, msg):
         if valor is None:
             return
 
-        # Hora inválida é dado sujo
+        #Hora inválida
         if not validar_hora(hora):
-            print(f"  [DADO SUJO] Hora inválida: {hora} — ignorado")
+            print(f"Hora inválida: {hora} — ignorado")
             db.outliers.insert_one({**data, "tipo": "Temperature", "motivo": "hora_invalida"})
             return
 
-        # Valor fora dos limites é outlier
+        #Valor fora dos limites
         if float(valor) < TEMP_MIN or float(valor) > TEMP_MAX:
-            print(f"  [OUTLIER TEMP] {valor} — ignorado")
+            print(f"temperatura fora dos limites: {valor} — ignorado")
             db.outliers.insert_one({**data, "tipo": "Temperature", "motivo": "valor_fora_limites"})
             return
 
         db.sensores.insert_one({**data, "tipo": "Temperature"})
-        print("  Temperatura guardada!")
+        print("Temperatura guardada")
 
-    # ── Som ───────────────────────────────────────────────────────
+    #som
     elif msg.topic == f"pisid_mazesound_{GRUPO}":
         valor = data.get("Sound")
         hora  = data.get("Hour", "")
@@ -65,20 +63,19 @@ def on_message(client, userdata, msg):
             return
 
         if not validar_hora(hora):
-            print(f"  [DADO SUJO] Hora inválida: {hora} — ignorado")
+            print(f"Hora inválida: {hora} — ignorado")
             db.outliers.insert_one({**data, "tipo": "Sound", "motivo": "hora_invalida"})
             return
 
-        # Outlier de som — estava em falta!
         if float(valor) < SOM_MIN or float(valor) > SOM_MAX:
-            print(f"  [OUTLIER SOM] {valor} — ignorado")
+            print(f"som fora dos limites: {valor} — ignorado")
             db.outliers.insert_one({**data, "tipo": "Sound", "motivo": "valor_fora_limites"})
             return
 
         db.sensores.insert_one({**data, "tipo": "Sound"})
-        print("  Som guardado!")
+        print("Som guardado")
 
-    # ── Movimentos ────────────────────────────────────────────────
+    #movimentos
     elif msg.topic == f"pisid_mazemov_{GRUPO}":
         marsami  = data.get("Marsami")
         origem   = data.get("RoomOrigin")
@@ -88,12 +85,12 @@ def on_message(client, userdata, msg):
         if marsami is None:
             return
 
-        # Status 2 = cansado (imobilizado) — guardamos mas assinalamos
+        # Status 2 = cansado (imobilizado)
         if status == 2:
-            print(f"  [CANSADO] Marsami {marsami} imobilizado")
+            print(f"cansado: Marsami {marsami} imobilizado")
 
         db.sensores.insert_one({**data, "tipo": "Movement"})
-        print("  Movimento guardado!")
+        print("Movimento guardado")
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
