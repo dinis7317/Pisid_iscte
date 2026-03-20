@@ -12,6 +12,12 @@ GRUPO  = 21
 TEMP_MIN, TEMP_MAX = 0, 50
 SOM_MIN,  SOM_MAX  = 0, 50
 
+grafo_labirinto = {
+    1: [2, 3], 2: [4, 5], 3: [2], 4: [5],
+    5: [3, 6, 7], 6: [8], 7: [5], 8: [10, 9],
+    9: [7], 10: [1]
+}
+
 def validar_hora(hora_str):
     try:
         datetime.strptime(hora_str, "%Y-%m-%d %H:%M:%S.%f")
@@ -88,6 +94,15 @@ def on_message(client, userdata, msg):
         # Status 2 = cansado (imobilizado)
         if status == 2:
             print(f"cansado: Marsami {marsami} imobilizado")
+
+        if origem == 0 and destino != 0:
+            print(f"Entrada no labirinto")
+            return
+
+        if origem in grafo_labirinto:
+            if destino not in grafo_labirinto[origem]:
+                print(f" Movimento impossível: {origem} -> {destino}")
+                return
 
         db.sensores.insert_one({**data, "tipo": "Movement"})
         print("Movimento guardado")
