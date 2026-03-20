@@ -80,6 +80,7 @@ def on_message(client, userdata, msg):
         marsami  = data.get("Marsami")
         origem   = data.get("RoomOrigin")
         destino  = data.get("RoomDestiny")
+        hora     = data.get("Hour", "")
         status   = data.get("Status")
 
         if marsami is None:
@@ -103,7 +104,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print("[AVISO] Desligado, a reconectar...")
+        print("Desligado, a reconectar...")
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 client.on_connect    = on_connect
