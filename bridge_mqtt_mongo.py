@@ -48,9 +48,14 @@ def on_message(client, userdata, msg):
     if msg.topic == f"pisid_mazetemp_{GRUPO}":
         valor = data.get("Temperature")
         hora = data.get("Hour", "")
+        sala = data.get("Sala")
 
         if valor is None:
             return
+
+        # Se a temperatura subir muito, ligar o AC (SetAirConditioner)
+        if valor > TEMP_MAX:
+            enviar_atuacao(client, "SetAirConditioner", sala)
 
         # Hora inválida
         if not validar_hora(hora):
@@ -71,9 +76,16 @@ def on_message(client, userdata, msg):
     elif msg.topic == f"pisid_mazesound_{GRUPO}":
         valor = data.get("Sound")
         hora = data.get("Hour", "")
+        sala = data.get("Sala")
 
         if valor is None:
             return
+        #se o ruido subir muito fechar corredor para marsamis pararem um pouco e ele abaixar
+        if valor > SOM_MAX:
+            enviar_atuacao(client, "CloseDoor", sala)
+        else:
+            # Se o som baixar, volta a abrir
+            enviar_atuacao(client, "OpenDoor", sala)
 
         if not validar_hora(hora):
             print(f"Hora inválida: {hora} — ignorado")
@@ -129,6 +141,7 @@ def on_message(client, userdata, msg):
             n_even = ocupacao_salas[destino]['even']
 
             if n_odd == n_even and n_odd > 0:
+                #Faz com que s´hajam 3 por sala
                 if gatilhos_acionados[destino] < 3:
                     send_score(client, destino)
                     gatilhos_acionados[destino] += 1
@@ -148,6 +161,15 @@ def send_score(client, sala):
     client.publish(topic, json.dumps(payload))
     print(f"!!! GATILHO ENVIADO para Sala {sala} (Odd:Even iguais) !!!")
 
+def enviar_atuacao(client, tipo_comando, sala):
+    # tipo_comando pode ser: "OpenDoor", "CloseDoor", "SetAirConditioner"
+    payload = {
+        "Type": tipo_comando,
+        "Player": GRUPO,
+        "Room": sala
+    }
+    client.publish("pisid_mazeact", json.dumps(payload))
+    print(f"⚠️ ATUAÇÃO ENVIADA: {tipo_comando} na Sala {sala}")
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
