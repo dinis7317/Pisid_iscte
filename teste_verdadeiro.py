@@ -103,7 +103,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print("[Aviso] Desligado, a reconectar...")
+        print("[AVISO] Desligado, a reconectar...")
 
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 client.on_connect    = on_connect
