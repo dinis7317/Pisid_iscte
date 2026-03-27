@@ -62,9 +62,16 @@ def iniciar_migracao():
                     inserido = True
 
                 elif tipo == 'Movement':
+                    origem = doc.get('RoomOrigin')
+                    destino = doc.get('RoomDestiny')
+                    marsami = doc.get('Marsami')
+
                     sql = "INSERT INTO Medicoespassagens (Hora, SalaOrigem, SalaDestino, Marsami, Status) VALUES (%s, %s, %s, %s, %s)"
-                    val = (doc.get('Hour'), doc.get('RoomOrigin'), doc.get('RoomDestiny'), doc.get('Marsami'), doc.get('Status'))
+                    val = (doc.get('Hour'), origem, destino, marsami, doc.get('Status'))
                     cursor_mysql.execute(sql, val)
+
+                    atualizar_ocupacao_mysql(cursor_mysql, mysql_conn, origem, destino, marsami)
+
                     inserido = True
 
                 mysql_conn.commit()
@@ -77,6 +84,22 @@ def iniciar_migracao():
         except Exception as e:
             print(f"Erro: {e}")
             time.sleep(5)
+
+
+def atualizar_ocupacao_mysql(cursor, conn, origem, destino, marsami_id):
+    tipo = 'n_even' if int(marsami_id) % 2 == 0 else 'n_odd'
+
+    # 1. Se saiu de uma sala (origem > 0), retira 1
+    if origem > 0:
+        sql_out = f"UPDATE ocupacao_salas SET {tipo} = GREATEST({tipo} - 1, 0), n_total = GREATEST(n_total - 1, 0) WHERE id_sala = %s"
+        cursor.execute(sql_out, (origem,))
+
+    # 2. Se entrou numa sala (destino > 0), soma 1
+    if destino > 0:
+        sql_in = f"UPDATE ocupacao_salas SET {tipo} = {tipo} + 1, n_total = n_total + 1 WHERE id_sala = %s"
+        cursor.execute(sql_in, (destino,))
+
+    conn.commit()
 
 if __name__ == "__main__":
     iniciar_migracao()

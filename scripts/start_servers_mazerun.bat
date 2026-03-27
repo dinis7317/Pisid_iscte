@@ -13,17 +13,28 @@ timeout /t 10 /nobreak
 :: 2. Tentar configurar (Se já estiver configurado, ele apenas dá erro e segue, não faz mal)
 mongosh --port 27019 --eval "rs.initiate(); rs.add('localhost:25019'); rs.add('localhost:23019');"
 
-:: 3. Iniciar o MazeRun (MUITO IMPORTANTE: cd /d e aspas)
+:: 3. Iniciar o Servidor Web temos de fazer isto
+echo 🌐 A iniciar Apache e MySQL...
+:: Ajusta o caminho se o teu XAMPP estiver noutro local
+start "" "C:\xampp\mysql_start.bat"
+start "" "C:\xampp\apache_start.bat"
+
+:: 4. Iniciar o MazeRun
 echo 🎮 A iniciar o MazeRun...
 cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid\mazerun"
 start "Simulador" mazerun.exe 21 --broker broker.hivemq.com --portbroker 1883
 
-:: 4. Iniciar a Bridge (Assume-se que está na mesma pasta ou na pasta Pisid)
+:: 5. Iniciar a Bridge (Assume-se que está na mesma pasta ou na pasta Pisid)
 echo 🐍 A iniciar a Bridge...
 cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid"
 start "Bridge" cmd /k "python bridge_mqtt_mongo.py"
 
-:: 5. Iniciar o Monitor
+:: 6. NOVO: Iniciar a Migração (Mongo -> MySQL + Ocupação)
+echo 🚚 A iniciar a Migração de Dados...
+:: Garante que o nome do ficheiro está correto
+start "Migracao" cmd /k "python migracao_dados.php.py"
+
+:: 7. Iniciar o Monitor
 echo 📊 A iniciar o Monitor...
 cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid\graficos"
 start "Monitor" monitmaze.exe 21
