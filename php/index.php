@@ -41,7 +41,7 @@
                             <td>" . $row["n_even"] . "</td>
                             <td>" . $row["n_total"] . "</td>
                           </tr>";
-<!--falta o atuar php para isto funcionar-->
+//<!--falta o atuar php para isto funcionar-->
                     echo "<td>
                             <a href='atuar.php?acao=CloseDoor&sala=".$row["id_sala"]."' style='color:red;'>Fechar Porta</a> |
                             <a href='atuar.php?acao=SetAirConditioner&sala=".$row["id_sala"]."' style='color:blue;'>Ligar AC</a> |
