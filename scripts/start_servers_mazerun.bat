@@ -2,7 +2,7 @@
 cls
 
 :: 1. Iniciar os Mongos (Já sabemos que funcionam!)
-set BASE_PATH="C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid\replica_dados_pisid"
+set BASE_PATH="C:\Users\maria\PycharmProjects\Pisid_iscte\replica_dados_pisid"
 start "Mongo_S1" mongod --config %BASE_PATH%\server1\server1.conf
 start "Mongo_S2" mongod --config %BASE_PATH%\server2\server2.conf
 start "Mongo_S3" mongod --config %BASE_PATH%\server3\server3.conf
@@ -21,22 +21,21 @@ start "" "C:\xampp\apache_start.bat"
 
 :: 4. Iniciar o MazeRun
 echo 🎮 A iniciar o MazeRun...
-cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid\mazerun"
+cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte\mazerun"
 start "Simulador" mazerun.exe 21 --broker broker.hivemq.com --portbroker 1883
 
 :: 5. Iniciar a Bridge (Assume-se que está na mesma pasta ou na pasta Pisid)
 echo 🐍 A iniciar a Bridge...
-cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid"
+cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte"
 start "Bridge" cmd /k "python bridge_mqtt_mongo.py"
 
 :: 6. NOVO: Iniciar a Migração (Mongo -> MySQL + Ocupação)
 echo 🚚 A iniciar a Migração de Dados...
-:: Garante que o nome do ficheiro está correto
-start "Migracao" cmd /k "python migracao_dados.php.py"
+start "Migracao" cmd /k "python migracao.py"
 
 :: 7. Iniciar o Monitor
 echo 📊 A iniciar o Monitor...
-cd /d "C:\Users\maria\OneDrive\Ambiente de Trabalho\3ANO\Pisid\graficos"
+cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte\graficos"
 start "Monitor" monitmaze.exe 21
 
 echo.
