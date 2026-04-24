@@ -1,8 +1,9 @@
 <?php
 $host = "127.0.0.1";
+$db   = 'pisid_maze';
 $user = "root";
 $pass = "";
-$db   = "pisid_maze";
+
 
 $conn = new mysqli($host, $user, $pass, $db);
 
