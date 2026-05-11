@@ -32,54 +32,46 @@ def validar_hora(hora_str):
         return False
 
 
+# --- Adiciona estas variáveis de estado no TOPO do código (fora das funções) ---
+estado_ac = None
+estado_portas = None
+
+
 def on_message(client, userdata, msg):
+    global estado_ac, estado_portas  # Para podermos alterar as variáveis acima
+
     raw = msg.payload.decode()
+
     try:
         data = json.loads(raw)
-    except json.JSONDecodeError:
-        print(f"JSON inválido: {raw}")
+    except:
         return
-
     data["_recebido_em"] = datetime.now()
-    tipo_registo = ""  # Usamos uma variável diferente para não confundir com a lógica interna
+    tipo_registo = ""
     validado = True
 
-    # --- TEMPERATURA ---
+    # --- LÓGICA DE TEMPERATURA ---
     if msg.topic == f"pisid_mazetemp_{GRUPO}":
-        tipo_registo = "Temperature"
         valor = data.get("Temperature")
-        hora = data.get("Hour", "")
-        sala = data.get("Sala")
+        if valor is not None:
+            novo_estado_ac = "AcOn" if valor > temperatura_alarmante else "AcOff"
 
-        if valor is None or not validar_hora(hora):
-            validado = False
+            # SÓ ENVIA SE O ESTADO MUDAR
+            if novo_estado_ac != estado_ac:
+                enviar_atuacao(client, novo_estado_ac)
+                estado_ac = novo_estado_ac
 
-        elif float(valor) < TEMP_MIN or float(valor) > TEMP_MAX:
-            print(f"Temperatura fora dos limites: {valor} — ignorado")
-            db.outliers.insert_one({**data, "tipo": "Temperature", "motivo": "valor_fora_limites"})
-            validado = False
-
-        if validado and valor > temperatura_alarmante:
-            enviar_atuacao(client, "SetAirConditioner", sala)
-
-    # --- SOM ---
+    # --- LÓGICA DE SOM ---
     elif msg.topic == f"pisid_mazesound_{GRUPO}":
-        tipo_registo = "Sound"
         valor = data.get("Sound")
-        hora = data.get("Hour", "")
-        sala = data.get("Sala")
+        if valor is not None:
 
-        if valor is None or not validar_hora(hora):
-            validado = False
+            novo_estado_portas = "CloseAllDoor" if valor > som_alarmante else "OpenAllDoor"
 
-        elif float(valor) < SOM_MIN or float(valor) > SOM_MAX:
-            print(f"Som fora dos limites: {valor} — ignorado")
-            db.outliers.insert_one({**data, "tipo": "Sound", "motivo": "valor_fora_limites"})
-            validado = False
-
-        if validado:
-            comando = "CloseDoor" if valor > som_alarmante else "OpenDoor"
-            enviar_atuacao(client, comando, sala)
+            # SÓ ENVIA SE O ESTADO MUDAR
+            if novo_estado_portas != estado_portas:
+                enviar_atuacao(client, novo_estado_portas)
+                estado_portas = novo_estado_portas
 
     # --- MOVIMENTOS ---
     elif msg.topic == f"pisid_mazemov_{GRUPO}":
@@ -98,7 +90,7 @@ def on_message(client, userdata, msg):
             if origem != 0 and origem in grafo_labirinto:
                 if destino not in grafo_labirinto[origem]:
                     print(f"Movimento impossível: {origem} -> {destino}")
-                    validado = False  # Não migramos movimentos impossíveis
+                    validado = False
 
             if validado:
                 # Atualização de ocupação local
@@ -117,7 +109,7 @@ def on_message(client, userdata, msg):
                             send_score(client, destino)
                             gatilhos_acionados[destino] += 1
 
-    # --- BLOCO FINAL: SALVAMENTO E MIGRAÇÃO ---
+
     if validado and tipo_registo != "":
         data["tipo"] = tipo_registo
         # Guarda no MongoDB
@@ -131,17 +123,27 @@ def on_message(client, userdata, msg):
         print(f"[{tipo_registo}] Migrado para SQL via tópico. ID: {data['_id']}")
 
 
-# Funções auxiliares mantêm-se iguais...
 def send_score(client, sala):
-    payload = {"Type": "Score", "Player": GRUPO, "Room": sala}
-    client.publish("pisid_mazeact", json.dumps(payload))
 
+    payload = {
+        "Type": "Score",
+        "Player": int(GRUPO),
+        "Sala": int(sala)
+    }
 
-def enviar_atuacao(client, tipo_comando, sala):
-    payload = {"Type": tipo_comando, "Player": GRUPO, "Room": sala}
-    client.publish("pisid_mazeact", json.dumps(payload))
-    print(f"⚠️ ATUAÇÃO: {tipo_comando} na Sala {sala}")
+    mensagem = json.dumps(payload, separators=(',', ':'))
+    client.publish("pisid_mazeact", mensagem)
+    print(f"🎯 [SENT] Score enviado: {mensagem}")
 
+def enviar_atuacao(client, comando):
+
+    payload = {
+        "Type": str(comando),
+        "Player": int(GRUPO)
+    }
+    mensagem = json.dumps(payload, separators=(',', ':'))
+    client.publish("pisid_mazeact", mensagem)
+    print(f"⚠️ [SENT] Atuação: {mensagem}")
 
 def on_connect(client, userdata, flags, rc):
     print("Bridge ligada. A subscrever tópicos...")

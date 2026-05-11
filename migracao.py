@@ -26,7 +26,7 @@ def atualizar_ultimo_id_migrado(cursor, conn, novo_id):
     cursor.execute("UPDATE Controlemigracao SET ultimo_id_mongo = %s", (str(novo_id),))
     conn.commit()
 
-# --- LÓGICA DE INSERÇÃO CORRIGIDA ---
+# --- LÓGICA DE INSERÇÃO ---
 def processar_e_inserir(data, cursor, conn):
     global ID_JOGO_ATUAL
     tipo = data.get('tipo')
@@ -66,7 +66,7 @@ def processar_e_inserir(data, cursor, conn):
         inserido = True
 
     if inserido:
-        conn.commit() # Importante fazer commit para cada inserção
+        conn.commit()
         if mongo_id:
             atualizar_ultimo_id_migrado(cursor, conn, mongo_id)
     return inserido

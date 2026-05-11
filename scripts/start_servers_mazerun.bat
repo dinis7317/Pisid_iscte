@@ -1,7 +1,7 @@
 @echo off
 cls
 
-:: 1. Iniciar os Mongos (Já sabemos que funcionam!)
+:: 1. Iniciar os Mongos
 set BASE_PATH="C:\Users\maria\PycharmProjects\Pisid_iscte\replica_dados_pisid"
 start "Mongo_S1" mongod --config %BASE_PATH%\server1\server1.conf
 start "Mongo_S2" mongod --config %BASE_PATH%\server2\server2.conf
@@ -10,7 +10,7 @@ start "Mongo_S3" mongod --config %BASE_PATH%\server3\server3.conf
 echo ⏳ Aguardando arranque...
 timeout /t 10 /nobreak
 
-:: 2. Tentar configurar (Se já estiver configurado, ele apenas dá erro e segue, não faz mal)
+:: 2. Tentar configurar
 mongosh --port 27019 --eval "rs.initiate(); rs.add('localhost:25019'); rs.add('localhost:23019');"
 
 :: 3. Iniciar o Servidor Web temos de fazer isto
@@ -24,7 +24,7 @@ echo 🎮 A iniciar o MazeRun...
 cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte\mazerun"
 start "Simulador" mazerun.exe 21 --broker broker.hivemq.com --portbroker 1883
 
-:: 5. Iniciar a Bridge (Assume-se que está na mesma pasta ou na pasta Pisid)
+:: 5. Iniciar a Bridge
 echo 🐍 A iniciar a Bridge...
 cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte"
 start "Bridge" cmd /k "python bridge_mqtt_mongo.py"
