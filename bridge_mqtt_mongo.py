@@ -20,6 +20,12 @@ grafo_labirinto = {
 ocupacao_salas = {i: {'odd': 0, 'even': 0} for i in range(1, 11)}
 gatilhos_acionados = {i: 0 for i in range(1, 11)}
 
+# ---------------- CONFIG DEFAULT ----------------
+TEMP_MAX = 100
+SOM_MAX = 100
+
+temperatura_alarmante = 35
+som_alarmante = 35
 
 def validar_hora(hora_str):
     try:
@@ -69,7 +75,8 @@ def on_message(client, userdata, msg):
     global TEMP_MAX, SOM_MAX
 
     raw = msg.payload.decode()
-
+    print("TOPIC RECEBIDO:", msg.topic)
+    print("PAYLOAD:", raw)
     try:
         data = json.loads(raw)
     except:
@@ -97,6 +104,7 @@ def on_message(client, userdata, msg):
     # --- LÓGICA DE TEMPERATURA ---
     if msg.topic == f"pisid_mazetemp_{GRUPO}":
         valor = data.get("Temperature")
+        tipo_registo = "Temperature"
         if valor is not None:
             # OUTLIER
             if valor < 0 or valor > TEMP_MAX:
@@ -113,6 +121,7 @@ def on_message(client, userdata, msg):
     # --- LÓGICA DE SOM ---
     elif msg.topic == f"pisid_mazesound_{GRUPO}":
         valor = data.get("Sound")
+        tipo_registo = "Sound"
         if valor is not None:
 
             # OUTLIER

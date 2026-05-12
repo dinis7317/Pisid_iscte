@@ -60,10 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id_jogo
     ]);
 
+    echo "<p style='color:blue;'>✔ SQL atualizado</p>";
+
     // ---------------- MQTT ----------------
     $mqtt = new phpMQTT($server, $port, $client_id);
 
+    echo "A ligar ao MQTT...<br>";
+
     if ($mqtt->connect()) {
+
+        echo "MQTT ligado ✔<br>";
 
         $payload = json_encode([
             "temp_alarmante" => (float)$temp_alarmante,
@@ -72,13 +78,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             "limite_som" => (float)$limite_som
         ]);
 
-        $topic = "pisid_config_" . $id_jogo;
+        $topic = "pisid_config_21";
+
+        echo "A publicar em: $topic<br>";
+        echo "Payload: $payload<br>";
 
         $mqtt->publish($topic, $payload, 0);
+
+        echo "<p style='color:green;'>✔ MQTT enviado (assumido)</p>";
+
         $mqtt->close();
+
+    } else {
+        echo "<p style='color:red;'>❌ Falha no MQTT CONNECT</p>";
     }
 
-    echo "<p style='color:green;'>✔ Parâmetros atualizados e enviados ao sistema!</p>";
+    echo "<p style='color:green;'>✔ Processo terminado</p>";
 }
 ?>
 

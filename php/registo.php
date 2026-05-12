@@ -7,12 +7,15 @@ $mensagem = "";
 $res_equipes = $conn->query("SELECT * FROM equipes");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $email = $_POST['email'];
-    $password_hash = $_POST['password_hash'];
+    $password = $_POST['password'];
     $id_equipe = $_POST['id_equipe'];
-    $perfil = 'user'; // Por padrão, novos registos são 'user'
 
+    $password_hash = hash('sha256', $password); // OK
+
+    }
     // 2. Verificar se o email já existe
     $checkEmail = $conn->prepare("SELECT email FROM utilizadores WHERE email = ?");
     $checkEmail->bind_param("s", $email);
@@ -50,7 +53,7 @@ $stmt->bind_param("sssi", $username, $email, $password_hash, $id_equipe);
         <input type="email" name="email" required><br><br>
 
         <label>Palavra-passe:</label><br>
-        <input type="password" name="password_hash" required><br><br>
+        <input type="password" name="password" required><br><br>
 
         <label>Sua Equipa:</label><br>
         <select name="id_equipe" required>

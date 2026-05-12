@@ -1,5 +1,6 @@
 <?php
 // login.php
+session_start();
 require 'config.php';
 
 $erro = "";
