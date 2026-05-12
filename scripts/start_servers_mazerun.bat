@@ -21,7 +21,7 @@ start "" "C:\xampp\apache_start.bat"
 
 :: 4. Iniciar o MazeRun
 echo 🎮 A iniciar o MazeRun...
-cd /d "C:\Users\maria\PycharmProjects\Pisid_iscte\mazerun"
+cd /d "C:\xampp\htdocs\scripts\mazerun"
 start "Simulador" mazerun.exe 21 --broker broker.hivemq.com --portbroker 1883
 
 :: 5. Iniciar a Bridge

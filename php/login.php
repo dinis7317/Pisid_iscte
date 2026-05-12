@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $result = $stmt->get_result();
 
     if ($user = $result->fetch_assoc()) {
-        if ($password === $user['password_hash']) {
+        if (hash('sha256', $password) === $user['password_hash']){
             $_SESSION['user_id'] = $user['id_user'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['perfil'] = $user['perfil'];

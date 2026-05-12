@@ -19,8 +19,18 @@ def ligar_mysql():
         host="127.0.0.1",
         user="root",
         password="",
-        database="pisid_maze"
+        database="pisid_maze2"
     )
+def obter_jogo_ativo(cursor):
+    cursor.execute("""
+        SELECT id_jogo
+        FROM jogo
+        WHERE status = 'ativo'
+        ORDER BY id_jogo DESC
+        LIMIT 1
+    """)
+    res = cursor.fetchone()
+    return res[0] if res else None
 
 def atualizar_ultimo_id_migrado(cursor, conn, novo_id):
     cursor.execute("UPDATE Controlemigracao SET ultimo_id_mongo = %s", (str(novo_id),))
@@ -33,12 +43,13 @@ def processar_e_inserir(data, cursor, conn):
     mongo_id = data.get('_id')
     inserido = False
 
-    # Se por acaso o ID_JOGO_ATUAL estiver vazio, tentamos recuperar o último jogo
-    if ID_JOGO_ATUAL is None:
-        cursor.execute("SELECT id_jogo FROM Jogo ORDER BY id_jogo DESC LIMIT 1")
-        res = cursor.fetchone()
-        ID_JOGO_ATUAL = res[0] if res else 1
+    novo_jogo = obter_jogo_ativo(cursor)
+    if novo_jogo is not None:
+        ID_JOGO_ATUAL = novo_jogo
 
+    if ID_JOGO_ATUAL is None:
+        print("Sem jogo ativo.")
+        return False
     if tipo == 'Temperature':
 
         sql = "INSERT INTO temperatura (Hora, Temperatura, id_jogo) VALUES (%s, %s, %s)"
@@ -87,13 +98,10 @@ if __name__ == "__main__":
     mysql_conn = ligar_mysql()
     cursor_mysql = mysql_conn.cursor()
 
-    # 1. CRIAR NOVO JOGO
-    print("A iniciar nova simulação...")
-    descricao_jogo = f"Simulação Grupo 21 - {time.strftime('%Y-%m-%d %H:%M:%S')}"
-    cursor_mysql.execute("INSERT INTO Jogo (DataInicio, Descricao) VALUES (NOW(), %s)", (descricao_jogo,))
-    mysql_conn.commit()
-    ID_JOGO_ATUAL = cursor_mysql.lastrowid
-    print(f"ID do Jogo Criado: {ID_JOGO_ATUAL}")
+    # obter jogo ativo inicial
+    ID_JOGO_ATUAL = obter_jogo_ativo(cursor_mysql)
+    print(f"Jogo ativo inicial: {ID_JOGO_ATUAL}")
+
 
     # 2. RECUPERAÇÃO DE FALHAS
     print("Verificando dados perdidos no MongoDB...")
