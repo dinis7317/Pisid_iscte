@@ -3,84 +3,37 @@ session_start();
 require 'config.php';
 require 'phpMQTT.php';
 
-// -------------------- MQTT CONFIG --------------------
+// Configurações do Broker (IGUAIS PARA TODOS)
 $server = "broker.hivemq.com";
 $port = 1883;
-$client_id = "php_edit_jogo_" . uniqid();
-
-
-// Proteção básica: Tem de estar logado
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
-
-$id_user = $_SESSION['user_id'];
-$id_equipe = $_SESSION['id_equipe'];
-$mensagem = "";
+$client_id = "php_start_21_" . uniqid();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-
-    $data_atual = date("Y-m-d H:i:s");
-
-    $nome_jogo = $_POST['nome_jogo'];
-
-    $limite_temp = $_POST['limite_temp'];
-    $limite_som = $_POST['limite_som'];
-
-    $temp_alarmante = $_POST['temp_alarmante'];
-    $som_alarmante = $_POST['som_alarmante'];
-
     try {
 
-        $sql = "INSERT INTO jogo (
-                    nome_jogo,
-                    DataInicio,
-                    id_criador,
-                    id_equipe,
-                    limite_temp,
-                    limite_som,
-                    temp_alarmante,
-                    som_alarmante,
-                    status
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ativo')";
-
+        // 2. Inserir novo jogo
+        $sql = "INSERT INTO jogo (nome_jogo, DataInicio, id_equipe, status) VALUES (?, NOW(), 21, 'ativo')";
         $stmt = $pdo->prepare($sql);
-
-        $stmt->execute([
-            $nome_jogo,
-            $data_atual,
-            $id_user,
-            $id_equipe,
-            $limite_temp,
-            $limite_som,
-            $temp_alarmante,
-            $som_alarmante
-        ]);
-
+        $stmt->execute([$_POST['nome_jogo']]);
         $id_novo_jogo = $pdo->lastInsertId();
 
-      pclose(popen('start "" /B "C:\\xampp\\htdocs\\scripts\\start_game.bat"', "r"));  $mensagem = "<div class='alert'>Jogo #$id_novo_jogo iniciado com sucesso!</div>";
+        // 3. Enviar sinal MQTT para o teu Windows (PC 2)
         $mqtt = new phpMQTT($server, $port, $client_id);
+        if ($mqtt->connect()) {
+            // Sinal de arranque para o Windows
+            $mqtt->publish("pisid_maze21_control", "START_GAME", 0);
 
-if ($mqtt->connect()) {
-
-    $payload = json_encode([
-        "temp_alarmante" => (float)$temp_alarmante,
-        "som_alarmante" => (float)$som_alarmante,
-        "limite_temp" => (float)$limite_temp,
-        "limite_som" => (float)$limite_som
-    ]);
-
-    $topic = "pisid_config_21";
-
-    $mqtt->publish($topic, $payload, 0);
-    $mqtt->close();
-}
-    } catch (PDOException $e) {
-        $mensagem = "<div class='alert' style='background: #f8d7da;'>Erro: " . $e->getMessage() . "</div>";
-    }
+            // Configurações para a Bridge/Android
+            $config = json_encode([
+                "id_jogo" => $id_novo_jogo,
+                "temp_limite" => (float)$_POST['limite_temp'],
+                "som_limite" => (float)$_POST['limite_som']
+            ]);
+            $mqtt->publish("pisid_config_21", $config, 0);
+            $mqtt->close();
+        }
+        echo "<div class='alert'>Jogo #$id_novo_jogo iniciado! O PC Windows vai arrancar...</div>";
+    } catch (Exception $e) { die("Erro: " . $e->getMessage()); }
 }
 ?>
 

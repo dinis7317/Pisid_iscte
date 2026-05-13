@@ -16,10 +16,11 @@ colecao_sensores = db_mongo["sensores"]
 
 def ligar_mysql():
     return mysql.connector.connect(
-        host="127.0.0.1",
-        user="root",
-        password="",
-        database="pisid_maze2"
+        host="192.168.1.82",      # IP do Mac
+        user="pc1",               # O utilizador que acabaste de criar
+        password="1234",          # A password que definiste no SQL acima
+        database="pisid_maze2",
+        auth_plugin='mysql_native_password' # Isto ajuda a evitar erros de versão
     )
 def obter_jogo_ativo(cursor):
     cursor.execute("""
