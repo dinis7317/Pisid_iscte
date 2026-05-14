@@ -16,10 +16,10 @@ colecao_sensores = db_mongo["sensores"]
 
 def ligar_mysql():
     return mysql.connector.connect(
-        host="192.168.1.82",      # IP do Mac
+        host="172.20.10.2",      # IP do Mac
         user="pc1",               # O utilizador que acabaste de criar
         password="1234",          # A password que definiste no SQL acima
-        database="pisid_maze2",
+        database="pisid_maze",
         auth_plugin='mysql_native_password' # Isto ajuda a evitar erros de versão
     )
 def obter_jogo_ativo(cursor):
@@ -37,6 +37,7 @@ def atualizar_ultimo_id_migrado(cursor, conn, novo_id):
     cursor.execute("UPDATE Controlemigracao SET ultimo_id_mongo = %s", (str(novo_id),))
     conn.commit()
 
+
 # --- LÓGICA DE INSERÇÃO ---
 def processar_e_inserir(data, cursor, conn):
     global ID_JOGO_ATUAL
@@ -51,36 +52,47 @@ def processar_e_inserir(data, cursor, conn):
     if ID_JOGO_ATUAL is None:
         print("Sem jogo ativo.")
         return False
-    if tipo == 'Temperature':
 
-        sql = "INSERT INTO temperatura (Hora, Temperatura, id_jogo) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (data.get('Hour'), str(data.get('Temperature')), ID_JOGO_ATUAL))
-        inserido = True
+    try:
+        if tipo == 'Temperature':
+            sql = "INSERT INTO temperatura (Hora, Temperatura, id_jogo) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (data.get('Hour'), str(data.get('Temperature')), ID_JOGO_ATUAL))
+            inserido = True
 
-    elif tipo == 'Sound':
+        elif tipo == 'Sound':
+            sql = "INSERT INTO som (Hora, Som, id_jogo) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (data.get('Hour'), str(data.get('Sound')), ID_JOGO_ATUAL))
+            inserido = True
 
-        sql = "INSERT INTO som (Hora, Som, id_jogo) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (data.get('Hour'), str(data.get('Sound')), ID_JOGO_ATUAL))
-        inserido = True
+        elif tipo == 'Movement':
+            sql = "INSERT INTO medicoespassagens (Hora, SalaOrigem, SalaDestino, Marsami, Status, id_jogo) VALUES (%s, %s, %s, %s, %s, %s)"
+            val = (
+                data.get('Hour'),
+                data.get('RoomOrigin'),
+                data.get('RoomDestiny'),
+                data.get('Marsami'),
+                data.get('Status'),
+                ID_JOGO_ATUAL
+            )
+            cursor.execute(sql, val)
+            inserido = True
 
-    elif tipo == 'Movement':
+        if inserido:
+            conn.commit()
+            if mongo_id:
+                atualizar_ultimo_id_migrado(cursor, conn, mongo_id)
 
-        sql = "INSERT INTO medicoespassagens (Hora, SalaOrigem, SalaDestino, Marsami, Status, id_jogo) VALUES (%s, %s, %s, %s, %s, %s)"
-        val = (
-            data.get('Hour'),
-            data.get('RoomOrigin'),
-            data.get('RoomDestiny'),
-            data.get('Marsami'),
-            data.get('Status'),
-            ID_JOGO_ATUAL
-        )
-        cursor.execute(sql, val)
-        inserido = True
+    except mysql.connector.Error as err:
+        # Se for o erro 1644 (o erro do Trigger), apenas ignoramos e continuamos
+        if err.errno == 1644:
+            print(f"⚠️ Dado ignorado pelo MySQL: {err.msg}")
+            # Atualizamos o ID migrado mesmo assim, para não ficar preso neste dado "mau"
+            if mongo_id:
+                atualizar_ultimo_id_migrado(cursor, conn, mongo_id)
+        else:
+            print(f"❌ Erro de Base de Dados: {err}")
+        return False
 
-    if inserido:
-        conn.commit()
-        if mongo_id:
-            atualizar_ultimo_id_migrado(cursor, conn, mongo_id)
     return inserido
 
 def on_message(client, userdata, msg):

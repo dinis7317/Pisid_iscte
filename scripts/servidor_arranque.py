@@ -7,7 +7,7 @@ TOPICO = "pisid_maze21_control"
 def on_message(client, userdata, msg):
     if msg.payload.decode() == "START_GAME":
         print("\n[!] Sinal do Mac recebido! A abrir o Labirinto...")
-        # Executa o teu ficheiro .bat
+
         subprocess.Popen([r"C:\Users\maria\PycharmProjects\Pisid_iscte\scripts\arrancar_labirinto.bat"], shell=True)
 
 client = mqtt.Client()
