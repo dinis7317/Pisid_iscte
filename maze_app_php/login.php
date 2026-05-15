@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" || $isAndroid) {
 
     if ($user = $result->fetch_assoc()) {
         // Verifica a password (estás a usar texto limpo conforme o teu código anterior)
-        if ($password === $user['password_hash']) {
+        if (hash('sha256', $password) === $user['password_hash']) {
             
             if ($isAndroid) {
                 // RESPOSTA PARA O ANDROID
